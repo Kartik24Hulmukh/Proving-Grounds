@@ -55,9 +55,24 @@ export async function rateLimitMiddleware(request: NextRequest): Promise<NextRes
         }
       );
     }
-  } catch {
-    // If Redis is down, fail open (allow the request)
-    console.error("Rate limiter error — failing open");
+  } catch (e) {
+    // R4.3: Fail CLOSED — Redis unavailable means we DENY, not allow.
+    // Never fail open on a security control.
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[rate-limit] Redis unavailable — failing CLOSED (denying request): ${msg}`);
+    return NextResponse.json(
+      {
+        error: "Service temporarily unavailable",
+        message: "Rate limiter is unavailable. Please try again later.",
+      },
+      {
+        status: 503,
+        headers: {
+          "Retry-After": "60",
+          "X-RateLimit-Error": "redis-unavailable",
+        },
+      }
+    );
   }
 
   return null; // Continue to the route handler

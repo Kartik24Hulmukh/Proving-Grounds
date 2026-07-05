@@ -1,6 +1,9 @@
 /**
  * Upstash Redis client — used for the trial job queue, rate limiting,
  * and per-trial budget guards.
+ *
+ * R4: If Redis is unreachable/misconfigured, all rate-limited endpoints
+ * must FAIL CLOSED (deny), never fail open.
  */
 
 import { Redis } from "@upstash/redis";
@@ -8,6 +11,7 @@ import { Ratelimit, type Duration } from "@upstash/ratelimit";
 
 /**
  * Get the shared Redis client (singleton per process).
+ * Throws if URL/token are missing — callers must catch and fail closed.
  */
 let _redis: Redis | null = null;
 
@@ -21,6 +25,20 @@ export function getRedis(): Redis {
     _redis = new Redis({ url, token });
   }
   return _redis;
+}
+
+/**
+ * Ping Redis to check health. Returns true if reachable.
+ * Used by the health endpoint and fail-closed tests.
+ */
+export async function pingRedis(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const r = getRedis();
+    const pong = await r.ping();
+    return { ok: pong === "PONG" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 /**

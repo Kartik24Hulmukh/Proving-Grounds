@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // ─── Rate limiting (P6.5) ──────────────────────────────────────────────
+  // ── Rate limiting (P6.5) ──
   try {
     const identifier = request.headers.get("x-forwarded-for") ?? "anonymous";
     const { success, reset } = await intakeRatelimit().limit(identifier);
@@ -29,12 +29,27 @@ export async function POST(request: Request) {
         { status: 429 }
       );
     }
-  } catch {
-    // If Redis is down, fail open (allow the request but log)
-    console.error("Rate limiter error — failing open");
+  } catch (e) {
+    // R4.2: Fail CLOSED — Redis unavailable means we DENY, not allow.
+    // Never fail open on a security control. Zero rows written.
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[intake] Rate limiter unavailable — failing CLOSED (denying submission): ${msg}`);
+    return NextResponse.json(
+      {
+        error: "Service temporarily unavailable",
+        message: "Submission intake is temporarily unavailable. Please try again later.",
+      },
+      {
+        status: 503,
+        headers: {
+          "Retry-After": "60",
+          "X-RateLimit-Error": "redis-unavailable",
+        },
+      }
+    );
   }
 
-  // ─── Parse body ────────────────────────────────────────────────────────
+  // ── Parse body ──
   let body: unknown;
   try {
     body = await request.json();
@@ -45,7 +60,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // ─── Validate adapter payload contract (P6.1) ──────────────────────────
+  // ── Validate adapter payload contract (P6.1) ──
   const result = safeValidateSubmission(body);
   if (!result.success) {
     const errors = result.error.issues.map((e) => ({
@@ -63,7 +78,7 @@ export async function POST(request: Request) {
 
   const payload = result.data;
 
-  // ─── Persist submission to Neon ────────────────────────────────────────
+  // ── Persist submission to Neon ──
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     return NextResponse.json(

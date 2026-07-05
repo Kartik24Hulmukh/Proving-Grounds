@@ -1,14 +1,20 @@
 /**
- * /api/evidence/[id] — P4.4
+ * /api/evidence/[id] — P4.4 / R3.2 / R3.3
  *
- * Serves evidence artifacts via signed/authorized access.
- * No public raw bucket URLs are exposed — all access goes through
- * this route which validates the request and generates a signed URL.
+ * Serves evidence artifacts from PRIVATE Vercel Blob storage.
+ *
+ * Vercel Blob is private — raw blob URLs return 403 Forbidden.
+ * This route uses head(url, { token }) → downloadUrl, then fetches
+ * the bytes with the token and streams them to the client.
+ *
+ * Supports two modes:
+ *   1. Default: streams the raw bytes (for video playback, trace download, etc.)
+ *   2. ?meta=1: returns JSON metadata (url, sha256, bytes, kind) for verification
  */
 
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { signedUrl } from "@/lib/blob/client";
+import { head } from "@vercel/blob";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +25,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const url = new URL(request.url);
-  const expirySeconds = parseInt(url.searchParams.get("expiry") ?? "3600", 10);
+  const metaOnly = url.searchParams.get("meta") === "1";
 
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -42,16 +48,73 @@ export async function GET(
 
   const evidence = rows[0];
 
-  // Generate a signed URL with expiry
-  const signed = signedUrl(evidence.url as string, expirySeconds);
+  // Metadata-only mode: return JSON for verification (R3.3)
+  if (metaOnly) {
+    return NextResponse.json({
+      id: evidence.id,
+      kind: evidence.kind,
+      url: evidence.url,
+      bytes: evidence.bytes,
+      sha256: evidence.sha256,
+      trialId: evidence.trial_id,
+    });
+  }
 
-  return NextResponse.json({
-    id: evidence.id,
-    kind: evidence.kind,
-    url: signed,
-    bytes: evidence.bytes,
-    sha256: evidence.sha256,
-    trialId: evidence.trial_id,
-    expiresIn: expirySeconds,
-  });
+  // Stream mode: fetch from private Blob via head() → downloadUrl
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!blobToken) {
+    return NextResponse.json({ error: "Blob token not configured" }, { status: 500 });
+  }
+
+  try {
+    // R3.3: Use head() with token to get the real downloadUrl
+    const info = await head(evidence.url as string, { token: blobToken });
+    if (!info || !info.downloadUrl) {
+      return NextResponse.json({ error: "Unable to resolve download URL" }, { status: 500 });
+    }
+
+    // Fetch the actual bytes with the token
+    const blobResp = await fetch(info.downloadUrl, {
+      headers: { Authorization: `Bearer ${blobToken}` },
+    });
+
+    if (!blobResp.ok) {
+      return NextResponse.json(
+        { error: `Blob fetch failed: ${blobResp.status}` },
+        { status: 502 }
+      );
+    }
+
+    // Stream the bytes to the client with appropriate content type
+    const contentType = info.contentType ?? getContentType(evidence.kind as string);
+    const headers = new Headers();
+    headers.set("Content-Type", contentType);
+    headers.set("Content-Length", String(evidence.bytes));
+    headers.set("X-Evidence-SHA256", evidence.sha256 as string);
+    headers.set("X-Evidence-Kind", evidence.kind as string);
+    headers.set("Cache-Control", "private, max-age=3600");
+
+    // For video, allow range requests for seeking
+    if (evidence.kind === "video") {
+      headers.set("Accept-Ranges", "bytes");
+    }
+
+    return new NextResponse(blobResp.body, { status: 200, headers });
+  } catch (e) {
+    return NextResponse.json(
+      { error: "Failed to fetch evidence", message: e instanceof Error ? e.message : "unknown" },
+      { status: 502 }
+    );
+  }
+}
+
+function getContentType(kind: string): string {
+  const types: Record<string, string> = {
+    video: "video/webm",
+    trace: "application/zip",
+    har: "application/json",
+    dom: "text/html",
+    log: "application/json",
+  };
+  return types[kind] ?? "application/octet-stream";
 }
