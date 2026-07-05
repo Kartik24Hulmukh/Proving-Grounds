@@ -9,6 +9,8 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { safeValidateSubmission } from "@/lib/adapters/payload-schema";
 import { intakeRatelimit } from "@/lib/redis/client";
+import { getScenarioBySlug } from "@/lib/scenarios/seeds";
+import { checkFixtureTargetGuard } from "@/lib/arena/runner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,6 +79,34 @@ export async function POST(request: Request) {
   }
 
   const payload = result.data;
+
+  // ── Fixture-only invariant: reject non-fixture targets before enqueue ──
+  // A scored trial may only target fixture hosts. Validate every requested
+  // scenario's startUrl against the fixture allowlist. Unknown scenario slugs
+  // are also rejected (they cannot be scored safely).
+  for (const slug of payload.scenarios) {
+    const scenario = getScenarioBySlug(slug);
+    if (!scenario) {
+      return NextResponse.json(
+        {
+          error: "Unknown scenario",
+          message: `Scenario "${slug}" is not a registered scenario.`,
+        },
+        { status: 422 }
+      );
+    }
+    const fixtureGuard = checkFixtureTargetGuard(scenario.spec.startUrl);
+    if (!fixtureGuard.allowed) {
+      return NextResponse.json(
+        {
+          error: "non_fixture_target",
+          message: `Scenario "${slug}" targets a non-fixture host. Scored trials may only run against fixture targets.`,
+          scenario: slug,
+        },
+        { status: 422 }
+      );
+    }
+  }
 
   // ── Persist submission to Neon ──
   const databaseUrl = process.env.DATABASE_URL;
