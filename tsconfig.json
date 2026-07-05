@@ -44,6 +44,7 @@
     "src/lib/judge/verify.ts",
     "src/lib/admin/verify.ts",
     "src/lib/otel/verify.ts",
+    "src/lib/production/verify.ts",
     "worker/index.ts"
   ]
 }
