@@ -1,5 +1,8 @@
 title = "Proving Grounds gitleaks config"
 
+[extend]
+useDefault = true
+
 [allowlist]
 description = "Allowlisted paths and patterns"
 paths = [
@@ -14,4 +17,18 @@ regexes = [
   '''your-.*-key''',
   '''generate-a-.*-secret''',
   '''postgres://user:password''',
+  # Test fixture fake API keys in scenario seeds (not real secrets)
+  '''sk-prod-1234567890''',
+  '''sk-proving-grounds-internal-key-2026''',
 ]
+
+# ── Custom rule: Vercel Blob private URLs with embedded access tokens ──
+# Blob URLs look like:
+#   https://<store-id>.private.blob.vercel-storage.com/<pathname>-<token>
+# The token suffix is 20+ alphanumeric chars. gitleaks default rules don't
+# match this pattern, so leaked Blob URLs pass G.1 unchecked.
+[[rules]]
+id = "vercel-blob-private-url"
+description = "Vercel Blob private URL with embedded access token"
+regex = '''blob\.vercel-storage\.com/[A-Za-z0-9_./-]+-[A-Za-z0-9]{20,}'''
+tags = ["key", "blob", "vercel"]

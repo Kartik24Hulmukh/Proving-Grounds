@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run gitleaks on staged files.
+# Blocks the commit if any secret is found.
+# Install: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Or: git config core.hooksPath .githooks
+
+set -e
+
+# Skip if gitleaks is not installed (warn but don't block)
+if ! command -v gitleaks &>/dev/null; then
+  echo "⚠️  gitleaks not found — pre-commit secret scan SKIPPED."
+  echo "   Install: https://github.com/gitleaks/gitleaks/releases"
+  exit 0
+fi
+
+# Scan staged files only (fast, pre-push full-history scan is in CI)
+echo "🔍 Running gitleaks on staged files..."
+if gitleaks protect --staged --redact --config .gitleaks.toml; then
+  echo "✅ No secrets detected in staged files."
+  exit 0
+else
+  echo ""
+  echo "❌ gitleaks found potential secrets in staged files!"
+  echo "   Review the findings above. If false positive, add to .gitleaks.toml allowlist."
+  echo "   DO NOT commit real secrets. Rotate any leaked credentials immediately."
+  exit 1
+fi

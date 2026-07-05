@@ -43,3 +43,11 @@ next-env.d.ts
 .vscode/
 .idea/
 .env.shell
+
+# trial batch outputs — NEVER commit (may contain resolved Blob URLs with tokens)
+*-results.md
+*-results.json
+batch-results.json
+batch-output.log
+/evidence/
+*.local

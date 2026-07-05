@@ -62,7 +62,7 @@ jobs:
           AI_GATEWAY_API_KEY: $ secrets.AI_GATEWAY_API_KEY 
 
   secret-scan:
-    name: Gitleaks (G.1 – no leaked secrets)
+    name: Gitleaks (G.1 – no leaked secrets, full history)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -70,5 +70,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Run gitleaks
+      - name: Run gitleaks on FULL history
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml
+          # Scan ALL commits, not just the diff — catches secrets introduced
+          # in any historical commit that default (diff-only) mode would miss.
+          log-opts: "--all"

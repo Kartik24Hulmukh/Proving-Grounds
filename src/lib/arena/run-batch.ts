@@ -43,7 +43,13 @@ interface BatchTrialResult {
     bytes: number;
     sha256: string;
     sha256Verified: boolean;
-    url: string;
+    /**
+     * Blob pathname (e.g. "trials/<id>/video-<id>") — NOT the resolved URL.
+     * Resolved/signed Blob URLs contain embedded access tokens and must
+     * NEVER be written to disk or git. Evidence is resolved at runtime
+     * via head()→downloadUrl with the env token.
+     */
+    evidenceKey: string;
   }[];
   videoMagicBytes: string | null;
   isWebM: boolean;
@@ -202,12 +208,15 @@ async function main() {
         } catch (e) {
           console.log(`  Evidence verify error (${row.kind}): ${e instanceof Error ? e.message : String(e)}`);
         }
+        // Extract the Blob pathname (safe — no embedded token).
+        // NEVER store the resolved URL (row.url) — it contains an access token.
+        const evidenceKey = row.url.replace(/^https?:\/\/[^/]+\//, "");
         evidence.push({
           kind: row.kind,
           bytes: row.bytes,
           sha256: row.sha256,
           sha256Verified,
-          url: row.url,
+          evidenceKey,
         });
         console.log(`    ${row.kind}: ${row.bytes} bytes, sha256=${row.sha256.slice(0, 16)}..., verified=${sha256Verified}`);
       }
@@ -339,27 +348,28 @@ async function main() {
   console.log(`  All reproducible: ${allReproducible}`);
   console.log("");
 
-  // Output JSON for further processing
+  // Output JSON for further processing — contains NO resolved URLs (only evidenceKey pathnames).
   const jsonPath = "/home/user/batch-results.json";
   const { writeFileSync } = await import("node:fs");
   writeFileSync(jsonPath, JSON.stringify(results, null, 2));
   console.log(`  Full results saved to: ${jsonPath}`);
 
-  // Output markdown table
+  // Output markdown table — evidence_url column replaced with trial_id
+  // (resolved Blob URLs contain embedded access tokens and must never be
+  // written to disk/git; evidence is resolved at runtime via head()→downloadUrl).
   console.log("\n════════════════════════════════════════════════════════════════");
   console.log("  MARKDOWN RESULTS TABLE");
   console.log("════════════════════════════════════════════════════════════════");
   console.log("");
-  console.log("| scenario | subject | verdict | oracle | judge score | sha256(short) | reproducible(Y/N) | evidence_url |");
-  console.log("|----------|---------|---------|--------|-------------|---------------|-------------------|--------------|");
+  console.log("| scenario | subject | verdict | oracle | judge score | sha256(short) | reproducible(Y/N) | trial_id |");
+  console.log("|----------|---------|---------|--------|-------------|---------------|-------------------|----------|");
   for (const r of results) {
     const verdictStr = r.verdict ? (r.verdict.passed ? "PASS" : "FAIL") : "N/A";
     const oracleStr = r.ruleOraclePassed ? "PASS" : "FAIL";
     const scoreStr = r.verdict ? String(r.verdict.score) : "N/A";
     const shaShort = r.evidence.length > 0 ? r.evidence[0].sha256.slice(0, 12) : "N/A";
     const reproStr = r.reproducible !== null ? (r.reproducible ? "Y" : "N") : "-";
-    const evidenceUrl = r.evidence.length > 0 ? r.evidence[0].url : "N/A";
-    console.log(`| ${r.scenarioSlug} | ${r.subjectName} ${r.subjectVersion} | ${verdictStr} | ${oracleStr} | ${scoreStr} | ${shaShort} | ${reproStr} | ${evidenceUrl} |`);
+    console.log(`| ${r.scenarioSlug} | ${r.subjectName} ${r.subjectVersion} | ${verdictStr} | ${oracleStr} | ${scoreStr} | ${shaShort} | ${reproStr} | ${r.trialId} |`);
   }
 }
 
