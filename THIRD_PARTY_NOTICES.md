@@ -43,6 +43,14 @@ test subjects — never imported as dependencies.
 | drizzle-kit | MIT | Database migration tooling |
 | postcss | MIT | CSS transformer |
 | autoprefixer | MIT | CSS vendor prefix automation |
+| vitest | MIT | Test runner (R5) |
+| tsx | MIT | TypeScript execution for worker/verify scripts |
+
+## Runtime Dependencies (Test/Adapter)
+
+| Package | License | Purpose |
+|---------|---------|---------|
+| playwright | Apache-2.0 | Real browser automation adapter (R2) |
 
 ## CI-Only Tools (not bundled, not shipped)
 
@@ -69,7 +77,8 @@ imported or bundled into the Proving Grounds codebase.
 | browserbase/stagehand | MIT | Reference adapter #2 |
 | Skyvern-AI/skyvern | AGPL-3.0 | Test via network/CLI only — never imported |
 | All-Hands-AI/OpenHands | MIT | Coding-agent subject |
+| Kartik24Hulmukh/unified-experience (BErozgar) | MIT | Local test target (R3) — driven via browser, never imported |
 
 ---
 
-Last updated: P0 — Foundations
+Last updated: R5 — Added vitest (MIT), playwright (Apache-2.0), BErozgar test target
