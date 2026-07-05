@@ -139,11 +139,15 @@ class SimulatedBrowserSession implements AgentSession {
   }
 }
 
+import { playwrightAdapter } from "@/lib/adapters/playwright-browser";
+
 /**
  * Registry of available adapters.
+ * The adapter is selected by key from agent_version.adapter_config (R2.4).
  */
 export const adapterRegistry: Record<string, AgentAdapter> = {
   "simulated-browser": new SimulatedBrowserAdapter(),
+  "playwright-browser": playwrightAdapter,
 };
 
 export function getAdapter(key: string): AgentAdapter | undefined {

@@ -126,11 +126,20 @@ export async function verifyEvidenceIntegrity(
 }
 
 /**
- * Generate mock evidence artifacts for a trial.
- * In P4 with a real adapter, these would be real Playwright captures.
- * For the simulated adapter, we generate realistic evidence content.
+ * Generate synthetic evidence artifacts for a trial.
+ *
+ * TEST-ONLY: This function is NEVER called in a production trial path (R2.5).
+ * It exists solely for unit tests that need to verify the evidence pipeline
+ * without launching a real browser. It is gated behind an explicit test flag.
+ *
+ * The production evidence capture path is in src/lib/arena/runner.ts → uploadRealEvidence(),
+ * which reads REAL files produced by the Playwright adapter.
  */
-export function generateMockEvidence(trialId: string, actions: Array<{ type: string; description?: string; timestamp: string }>): EvidenceArtifact[] {
+export function generateMockEvidence(
+  trialId: string,
+  actions: Array<{ type: string; description?: string; timestamp: string }>,
+  _testFlag: true = true
+): EvidenceArtifact[] {
   const timestamp = new Date().toISOString();
 
   // Video: WebM placeholder (real video would come from Playwright)
