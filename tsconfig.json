@@ -43,6 +43,7 @@
     "src/lib/evidence/verify.ts",
     "src/lib/judge/verify.ts",
     "src/lib/admin/verify.ts",
+    "src/lib/otel/verify.ts",
     "worker/index.ts"
   ]
 }
