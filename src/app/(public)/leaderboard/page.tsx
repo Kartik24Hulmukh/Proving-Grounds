@@ -2,11 +2,20 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
- * Leaderboard route — P1.1, P1.2
- * Ranks products by score with scenario-set tabs.
+ * Leaderboard route — R1 (Blocker 1).
+ * Live data from Neon via Drizzle/neon queries. No mock data.
  */
-export default function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ set?: string }>;
+}) {
+  const { set } = await searchParams;
+  const scenarioSet = set ?? "all";
   return (
     <>
       <SiteHeader />
@@ -17,7 +26,7 @@ export default function LeaderboardPage() {
             Ranked agent performance across adversarial scenarios. Scores are reproducible.
           </p>
         </div>
-        <LeaderboardView />
+        <LeaderboardView scenarioSet={scenarioSet} />
       </main>
       <SiteFooter />
     </>

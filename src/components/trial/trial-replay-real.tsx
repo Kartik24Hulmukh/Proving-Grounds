@@ -1,50 +1,47 @@
-import { cn, timeAgo } from "@/lib/utils";
+import { cn, timeAgo, formatCost } from "@/lib/utils";
 import { CheckCircle2, XCircle, Shield, ShieldAlert, Download, Play, FileText, Network, Code } from "lucide-react";
+import type {
+  TrialDetailRow,
+  TrialStepRow,
+  EvidenceRow,
+} from "@/lib/db/queries";
 
 /**
- * Trial Replay Viewer (Real) — P4.3
- * Plays real video and lists real steps from the database.
- * No mocks remain.
+ * Trial Replay Viewer (Real) — R1 (Blocker 1) / P4.3.
+ * Renders live data from Neon. No mock data. No placeholders.
  */
-
-interface TrialReplayData {
-  trial: Record<string, unknown>;
-  steps: Record<string, unknown>[];
-  evidence: Record<string, unknown>[];
-  verdict: Record<string, unknown> | null;
-  product: Record<string, unknown> | null;
-  scenario: Record<string, unknown> | null;
-}
-
-export function TrialReplayReal({ trialId, data }: { trialId: string; data: TrialReplayData }) {
-  const trial = data.trial;
-  const steps = data.steps;
-  const evidence = data.evidence;
-  const verdict = data.verdict;
-
-  const passed = verdict?.passed as boolean | undefined;
-  const score = verdict?.score as string | undefined;
-  const rationale = verdict?.rationale as string | undefined;
-  const injectedDefenseHeld = verdict?.injected_defense_held as boolean | undefined;
-  const scenarioTitle = trial.scenario_title as string;
-  const scenarioSlug = trial.scenario_slug as string;
-  const productName = trial.product_name as string;
-  const productSlug = trial.product_slug as string;
-  const status = trial.status as string;
-  const sandboxKind = trial.sandbox_kind as string;
-  const costCents = trial.cost_cents as number;
-  const startedAt = trial.started_at as string | null;
+export function TrialReplayReal({
+  trialId,
+  trial,
+  steps,
+  evidence,
+}: {
+  trialId: string;
+  trial: TrialDetailRow;
+  steps: TrialStepRow[];
+  evidence: EvidenceRow[];
+}) {
+  const passed = trial.passed;
+  const score = trial.score;
+  const rationale = trial.rationale;
+  const injectedDefenseHeld = trial.injectedDefenseHeld;
+  const scenarioTitle = trial.scenarioTitle;
+  const scenarioSlug = trial.scenarioSlug;
+  const productName = trial.productName;
+  const status = trial.status;
+  const sandboxKind = trial.sandboxKind;
+  const costCents = trial.costCents;
+  const startedAt = trial.startedAt;
 
   const videoEvidence = evidence.find((e) => e.kind === "video");
-  const videoUrl = videoEvidence?.url as string | undefined;
+  const videoUrl = videoEvidence?.url;
 
-  const duration = trial.finished_at && trial.started_at
-    ? Math.round((new Date(trial.finished_at as string).getTime() - new Date(trial.started_at as string).getTime()) / 1000)
+  const duration = trial.finishedAt && trial.startedAt
+    ? Math.round((new Date(trial.finishedAt).getTime() - new Date(trial.startedAt).getTime()) / 1000)
     : 0;
 
   return (
     <div className="space-y-6">
-      {/* Trial header */}
       <div className="surface p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -74,8 +71,7 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
         </div>
       </div>
 
-      {/* Verdict summary */}
-      {verdict && rationale && (
+      {rationale && (
         <div className={cn("surface p-4", passed ? "border-l-2 border-l-[var(--color-accent)]" : "border-l-2 border-l-[var(--color-danger)]")}>
           <div className="mb-2 flex items-center gap-2">
             {injectedDefenseHeld ? (
@@ -92,15 +88,10 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Video player (real video from Blob) */}
         <div className="lg:col-span-2">
           <div className="surface overflow-hidden">
             {videoUrl ? (
-              <video
-                controls
-                className="aspect-video w-full bg-[var(--color-bg)]"
-                aria-label="Trial session video"
-              >
+              <video controls className="aspect-video w-full bg-[var(--color-bg)]" aria-label="Trial session video">
                 <source src={videoUrl} type="video/webm" />
                 Your browser does not support video playback.
               </video>
@@ -117,7 +108,6 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
             </div>
           </div>
 
-          {/* Step timeline (real steps from DB) */}
           <div className="surface mt-4 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">
               Step Timeline ({steps.length})
@@ -129,13 +119,11 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
                 {steps.map((step) => {
                   const action = step.action as { type: string; description?: string };
                   return (
-                    <li key={step.id as string} className="flex gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--color-surface-2)]">
-                      <span className="mono w-8 shrink-0 text-xs text-[var(--color-muted)]">{step.idx as number}</span>
+                    <li key={step.id} className="flex gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--color-surface-2)]">
+                      <span className="mono w-8 shrink-0 text-xs text-[var(--color-muted)]">{step.idx}</span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-[var(--color-text)]">{action?.description ?? action?.type ?? "Unknown action"}</p>
-                        <p className="mono text-xs text-[var(--color-muted)]">
-                          {action?.type} · {timeAgo(step.ts as string)}
-                        </p>
+                        <p className="mono text-xs text-[var(--color-muted)]">{action?.type} · {timeAgo(step.ts)}</p>
                       </div>
                     </li>
                   );
@@ -145,7 +133,6 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
           </div>
         </div>
 
-        {/* Evidence panel (real evidence from Blob) */}
         <div className="space-y-4">
           <div className="surface p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">Evidence</h2>
@@ -154,15 +141,15 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
             ) : (
               <ul className="space-y-2">
                 {evidence.map((ev) => (
-                  <li key={ev.id as string}>
+                  <li key={ev.id}>
                     <a
                       href={`/api/evidence/${ev.id}`}
                       className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-border-hover)]"
                     >
-                      <EvidenceIcon kind={ev.kind as string} />
+                      <EvidenceIcon kind={ev.kind} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm capitalize text-[var(--color-text)]">{ev.kind as string}</div>
-                        <div className="mono text-xs text-[var(--color-muted)]">{((ev.bytes as number) / 1000).toFixed(0)} KB · sha256: {(ev.sha256 as string).slice(0, 8)}…</div>
+                        <div className="text-sm capitalize text-[var(--color-text)]">{ev.kind}</div>
+                        <div className="mono text-xs text-[var(--color-muted)]">{(ev.bytes / 1000).toFixed(0)} KB · sha256: {ev.sha256.slice(0, 8)}…</div>
                       </div>
                       <Download className="h-4 w-4 text-[var(--color-muted)]" aria-hidden="true" />
                     </a>
@@ -172,7 +159,6 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
             )}
           </div>
 
-          {/* Trial metadata */}
           <div className="surface p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">Metadata</h2>
             <dl className="space-y-2 text-sm">
@@ -186,12 +172,24 @@ export function TrialReplayReal({ trialId, data }: { trialId: string; data: Tria
               </div>
               <div className="flex justify-between">
                 <dt className="text-[var(--color-muted)]">Cost</dt>
-                <dd className="mono text-[var(--color-text)]">${((costCents ?? 0) / 100).toFixed(2)}</dd>
+                <dd className="mono text-[var(--color-text)]">{formatCost(costCents)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[var(--color-muted)]">Started</dt>
                 <dd className="mono text-[var(--color-text)]">{startedAt ? timeAgo(startedAt) : "—"}</dd>
               </div>
+              {trial.rubricVersion && (
+                <div className="flex justify-between">
+                  <dt className="text-[var(--color-muted)]">Rubric</dt>
+                  <dd className="mono text-[var(--color-text)]">{trial.rubricVersion}</dd>
+                </div>
+              )}
+              {trial.judgeModel && (
+                <div className="flex justify-between">
+                  <dt className="text-[var(--color-muted)]">Judge</dt>
+                  <dd className="mono text-[var(--color-text)]">{trial.judgeModel}</dd>
+                </div>
+              )}
             </dl>
           </div>
         </div>

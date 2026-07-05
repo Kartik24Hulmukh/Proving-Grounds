@@ -2,9 +2,12 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ProductProfile } from "@/components/product/product-profile";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
- * Product profile route — P1.1
- * Shows product info, versions, pass rate, recent trials.
+ * Product profile route — R1 (Blocker 1).
+ * Live data from Neon. No mock data.
  */
 export default async function ProductPage({
   params,

@@ -1,14 +1,14 @@
-import { mockRubric } from "@/lib/mock/data";
+import { RUBRIC } from "@/lib/judge/rubric";
 import { Scale, Shield, Thermometer, Lock } from "lucide-react";
 
 /**
- * Methodology page — P1.1
- * Renders the published rubric + scoring explanation.
+ * Methodology page — R1 (Blocker 1).
+ * Renders the ACTUAL rubric from src/lib/judge/rubric.ts (source of truth).
+ * No mock data.
  */
 export function MethodologyView() {
   return (
     <div className="space-y-8">
-      {/* Intro */}
       <div className="surface p-6">
         <h1 className="text-2xl font-bold text-[var(--color-text)]">Methodology</h1>
         <p className="mt-4 text-[var(--color-text-dim)]">
@@ -19,56 +19,42 @@ export function MethodologyView() {
         </p>
       </div>
 
-      {/* Judge config */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ConfigCard icon={Scale} label="Rubric Version" value={mockRubric.version} />
-        <ConfigCard icon={Thermometer} label="Temperature" value={String(mockRubric.temperature)} />
-        <ConfigCard icon={Lock} label="Pinned Model" value={mockRubric.model} />
+        <ConfigCard icon={Scale} label="Rubric Version" value={RUBRIC.version} />
+        <ConfigCard icon={Thermometer} label="Temperature" value={String(RUBRIC.temperature)} />
+        <ConfigCard icon={Lock} label="Pinned Model" value={RUBRIC.model} />
         <ConfigCard icon={Shield} label="Oracle First" value="Always" />
       </div>
 
-      {/* Scoring criteria */}
       <div className="surface p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-          Scoring Criteria
-        </h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">Scoring Criteria</h2>
         <div className="space-y-4">
-          {mockRubric.criteria.map((c) => (
+          {RUBRIC.criteria.map((c) => (
             <div key={c.name} className="border-b border-[var(--color-border)] pb-4 last:border-b-0">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-[var(--color-text)]">{c.name}</span>
                 <span className="mono text-sm text-[var(--color-accent)]">{c.weight}%</span>
               </div>
               <p className="mt-1 text-sm text-[var(--color-text-dim)]">{c.description}</p>
-              {/* Weight bar */}
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--color-border)]">
-                <div
-                  className="h-full rounded-full bg-[var(--color-accent)]"
-                  style={{ width: `${c.weight}%` }}
-                />
+                <div className="h-full rounded-full bg-[var(--color-accent)]" style={{ width: `${c.weight}%` }} />
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Pass/fail rules */}
       <div className="surface p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-          Pass / Fail Rules
-        </h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">Pass / Fail Rules</h2>
         <div className="space-y-3">
-          <RuleRow label="Pass" value={mockRubric.scoring.pass} positive />
-          <RuleRow label="Fail" value={mockRubric.scoring.fail} />
-          <RuleRow label="Oracle Precedence" value={mockRubric.scoring.ruleOracleFirst} />
+          <RuleRow label="Pass" value={RUBRIC.scoring.pass} positive />
+          <RuleRow label="Fail" value={RUBRIC.scoring.fail} />
+          <RuleRow label="Oracle Precedence" value={RUBRIC.scoring.ruleOracleFirst} />
         </div>
       </div>
 
-      {/* Trial lifecycle */}
       <div className="surface p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-          Trial Lifecycle
-        </h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)]">Trial Lifecycle</h2>
         <ol className="space-y-3">
           {[
             "Job enqueued (submission approved or scheduled re-run) → Redis queue",
@@ -79,9 +65,7 @@ export function MethodologyView() {
             "Leaderboard snapshot recomputed; replay page becomes public",
           ].map((step, i) => (
             <li key={i} className="flex gap-3">
-              <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-xs text-[var(--color-accent)]">
-                {i + 1}
-              </span>
+              <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-xs text-[var(--color-accent)]">{i + 1}</span>
               <span className="text-sm text-[var(--color-text-dim)]">{step}</span>
             </li>
           ))}
@@ -104,9 +88,7 @@ function ConfigCard({ icon: Icon, label, value }: { icon: typeof Scale; label: s
 function RuleRow({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
     <div className="flex flex-col gap-1 border-b border-[var(--color-border)] pb-3 last:border-b-0 sm:flex-row sm:gap-4">
-      <span className={`mono w-32 shrink-0 text-sm font-medium ${positive ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
-        {label}
-      </span>
+      <span className={`mono w-32 shrink-0 text-sm font-medium ${positive ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>{label}</span>
       <span className="text-sm text-[var(--color-text-dim)]">{value}</span>
     </div>
   );
