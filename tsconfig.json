@@ -41,6 +41,7 @@
     "src/lib/scenarios/verify.ts",
     "src/lib/arena/verify.ts",
     "src/lib/evidence/verify.ts",
+    "src/lib/judge/verify.ts",
     "worker/index.ts"
   ]
 }
