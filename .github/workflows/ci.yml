@@ -66,11 +66,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Run gitleaks on FULL history
+      - name: Gitleaks (full history via action)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,3 +79,10 @@ jobs:
           # Scan ALL commits, not just the diff — catches secrets introduced
           # in any historical commit that default (diff-only) mode would miss.
           log-opts: "--all"
+      - name: Gitleaks (full history via binary — belt-and-suspenders)
+        # Fallback: run gitleaks binary directly to guarantee full-history scan
+        # even if the action wrapper doesn't honor log-opts on push events.
+        run: |
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar xz -C /tmp
+          /tmp/gitleaks git --log-opts="--all" --config .gitleaks.toml --no-banner -v
+          echo "gitleaks full-history scan: CLEAN"

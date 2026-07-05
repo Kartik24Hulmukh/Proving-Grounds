@@ -12,18 +12,26 @@ permissions:
 
 jobs:
   gitleaks:
-    name: Gitleaks Secret Scan
+    name: Gitleaks Secret Scan (full history)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Gitleaks
+      - name: Gitleaks (full history via action)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-path: .gitleaks.toml
+          log-opts: "--all"
+      - name: Gitleaks (full history via binary — belt-and-suspenders)
+        # Fallback: run gitleaks binary directly to guarantee full-history scan
+        # even if the action wrapper doesn't honor log-opts on push events.
+        run: |
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar xz -C /tmp
+          /tmp/gitleaks git --log-opts="--all" --config .gitleaks.toml --no-banner -v
+          echo "gitleaks full-history scan: CLEAN"
 
   semgrep:
     name: Semgrep Static Analysis
