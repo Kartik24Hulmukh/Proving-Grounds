@@ -50,6 +50,100 @@ export const DEFAULT_COST_CAP_CENTS = 500;
 export const DEFAULT_TIMEOUT_MS = 180000;
 
 /**
+ * R3.5: Public host protection guard.
+ *
+ * Adversarial/destructive scenarios must NEVER run against public production
+ * hosts (e.g. rgitrozgar.in). Only benign, read-only scenarios may target
+ * public hosts, and even then only browse/search actions are allowed.
+ *
+ * This guard fires BEFORE any browser is launched — if the scenario is
+ * adversarial and the target host is public, the trial is refused.
+ */
+export const PUBLIC_HOSTS = [
+  "rgitrozgar.in",
+  "www.rgitrozgar.in",
+];
+
+export interface GuardResult {
+  allowed: boolean;
+  reason: string;
+}
+
+/**
+ * Check whether a trial is allowed to proceed against its target host.
+ * Returns { allowed: false, reason } if an adversarial scenario targets
+ * a public host, or if a destructive action is attempted against a public host.
+ */
+export function checkScenarioHostGuard(
+  scenarioSlug: string,
+  startUrl: string,
+  isAdversarial: boolean
+): GuardResult {
+  const host = extractHost(startUrl);
+
+  // Check if the target is a public host
+  const isPublicHost = PUBLIC_HOSTS.some(
+    (ph) => host === ph || host.endsWith("." + ph)
+  );
+
+  if (!isPublicHost) {
+    return { allowed: true, reason: "target is not a public host" };
+  }
+
+  // Public host — only benign scenarios allowed
+  if (isAdversarial) {
+    return {
+      allowed: false,
+      reason: `REFUSED: adversarial scenario "${scenarioSlug}" cannot run against public host "${host}". Adversarial scenarios only run against local/fixture targets.`,
+    };
+  }
+
+  // Benign scenario on public host — allowed but read-only
+  return {
+    allowed: true,
+    reason: `benign scenario "${scenarioSlug}" allowed on public host "${host}" (read-only)`,
+  };
+}
+
+/**
+ * Check whether a specific action is safe to execute against a public host.
+ * Only read-only actions (navigate, read, screenshot, done) are allowed.
+ * Write/delete/click-submit actions are refused on public hosts.
+ */
+export function checkActionHostGuard(
+  actionType: string,
+  startUrl: string
+): GuardResult {
+  const host = extractHost(startUrl);
+  const isPublicHost = PUBLIC_HOSTS.some(
+    (ph) => host === ph || host.endsWith("." + ph)
+  );
+
+  if (!isPublicHost) {
+    return { allowed: true, reason: "target is not a public host" };
+  }
+
+  const readOnlyActions = ["navigate", "read", "screenshot", "done", "respond"];
+  if (readOnlyActions.includes(actionType)) {
+    return { allowed: true, reason: `read-only action "${actionType}" allowed on public host` };
+  }
+
+  return {
+    allowed: false,
+    reason: `REFUSED: action "${actionType}" is not read-only and cannot execute against public host "${host}". Only browse/search/read actions are allowed on public hosts.`,
+  };
+}
+
+function extractHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.toLowerCase();
+  } catch {
+    return url.toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+  }
+}
+
+/**
  * Run a trial end-to-end inside the arena.
  */
 export async function runTrial(params: {
@@ -86,6 +180,29 @@ export async function runTrial(params: {
     if (!scenario) {
       throw new Error(`Scenario not found: ${scenarioSlug}`);
     }
+
+    // R3.5: Host guard — refuse adversarial scenarios against public hosts
+    const guardResult = checkScenarioHostGuard(
+      scenarioSlug,
+      scenario.spec.startUrl,
+      scenario.spec.isAdversarial
+    );
+    if (!guardResult.allowed) {
+      console.error(`[arena] HOST GUARD: ${guardResult.reason}`);
+      await sql`UPDATE trial SET status = 'quarantined', finished_at = now(), error = ${guardResult.reason} WHERE id = ${trialId}`;
+      return {
+        trialId,
+        status: "quarantined",
+        agentResult: null,
+        ruleOraclePassed: false,
+        hardFailViolations: [],
+        costCents: 0,
+        durationMs: Date.now() - startTime,
+        evidenceUploaded: 0,
+        error: guardResult.reason,
+      };
+    }
+    console.log(`[arena] HOST GUARD: ${guardResult.reason}`);
 
     const adapter = getAdapter(adapterKey);
     if (!adapter) {

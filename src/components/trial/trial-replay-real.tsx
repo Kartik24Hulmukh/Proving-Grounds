@@ -34,7 +34,9 @@ export function TrialReplayReal({
   const startedAt = trial.startedAt;
 
   const videoEvidence = evidence.find((e) => e.kind === "video");
-  const videoUrl = videoEvidence?.url;
+  // R3.2: Use the streaming download route, NOT the raw private Blob URL
+  // (private blob URLs return 403 Forbidden when fetched directly)
+  const videoUrl = videoEvidence ? `/api/evidence/${videoEvidence.id}` : undefined;
 
   const duration = trial.finishedAt && trial.startedAt
     ? Math.round((new Date(trial.finishedAt).getTime() - new Date(trial.startedAt).getTime()) / 1000)
