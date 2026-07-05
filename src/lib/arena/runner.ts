@@ -50,6 +50,24 @@ export const DEFAULT_COST_CAP_CENTS = 500;
 export const DEFAULT_TIMEOUT_MS = 180000;
 
 /**
+ * Fixture target allowlist — the SINGLE SOURCE OF TRUTH for which hosts a
+ * scored trial may target. Scored trials may run ONLY against fixture
+ * targets, never the live web (reproducibility, legality, anti-gaming).
+ *
+ * This reuses the same host-matching mechanism as the egress allowlist
+ * (extractHost + suffix match). The fixture server runs on localhost:9876;
+ * arena.local is the fixture-page domain used by scenario specs.
+ *
+ * A trial whose target host is NOT in this list is rejected with reason
+ * 'non_fixture_target' before any browser action or evidence capture.
+ */
+export const FIXTURE_TARGET_ALLOWLIST = [
+  "localhost",
+  "127.0.0.1",
+  "arena.local",
+];
+
+/**
  * R3.5: Public host protection guard.
  *
  * Adversarial/destructive scenarios must NEVER run against public production
@@ -144,6 +162,31 @@ function extractHost(url: string): string {
 }
 
 /**
+ * Fixture-only invariant: scored trials may run ONLY against fixture targets,
+ * never the live web. Returns { allowed: false, reason: 'non_fixture_target' }
+ * if the target host is not in the fixture allowlist.
+ *
+ * This is an ADDITIONAL gate layered on top of the adversarial host guard —
+ * it does not replace or weaken any existing refusal path.
+ */
+export function checkFixtureTargetGuard(
+  startUrl: string,
+  allowlist: string[] = FIXTURE_TARGET_ALLOWLIST
+): GuardResult {
+  const host = extractHost(startUrl);
+  const isFixture = allowlist.some(
+    (fh) => host === fh.toLowerCase() || host.endsWith("." + fh.toLowerCase())
+  );
+  if (!isFixture) {
+    return {
+      allowed: false,
+      reason: "non_fixture_target",
+    };
+  }
+  return { allowed: true, reason: `target host "${host}" is a fixture target` };
+}
+
+/**
  * Run a trial end-to-end inside the arena.
  */
 export async function runTrial(params: {
@@ -203,6 +246,36 @@ export async function runTrial(params: {
       };
     }
     console.log(`[arena] HOST GUARD: ${guardResult.reason}`);
+
+    // Fixture-only invariant: scored trials may target ONLY fixture hosts.
+    // Fires BEFORE any browser action or evidence capture. Zero evidence,
+    // zero uploads on rejection. Additional gate — does not weaken the
+    // adversarial guard above.
+    const fixtureGuard = checkFixtureTargetGuard(scenario.spec.startUrl);
+    if (!fixtureGuard.allowed) {
+      const rejectedHost = extractHost(scenario.spec.startUrl);
+      console.error(
+        JSON.stringify({
+          level: "error",
+          event: "non_fixture_target",
+          trial_id: trialId,
+          rejected_host: rejectedHost,
+          reason: fixtureGuard.reason,
+        })
+      );
+      await sql`UPDATE trial SET status = 'quarantined', finished_at = now(), error = ${fixtureGuard.reason} WHERE id = ${trialId}`;
+      return {
+        trialId,
+        status: "quarantined",
+        agentResult: null,
+        ruleOraclePassed: false,
+        hardFailViolations: [],
+        costCents: 0,
+        durationMs: Date.now() - startTime,
+        evidenceUploaded: 0,
+        error: fixtureGuard.reason,
+      };
+    }
 
     const adapter = getAdapter(adapterKey);
     if (!adapter) {
