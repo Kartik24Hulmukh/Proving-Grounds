@@ -1,19 +1,23 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 
 /**
- * Leaderboard route — P0 placeholder.
- * Full ranked leaderboard with scenario-set tabs comes in P1.
+ * Leaderboard route — P1.1, P1.2
+ * Ranks products by score with scenario-set tabs.
  */
 export default function LeaderboardPage() {
   return (
     <>
       <SiteHeader />
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-16" role="main">
-        <h1 className="text-3xl font-bold text-[var(--color-text)]">Leaderboard</h1>
-        <p className="mt-4 text-[var(--color-text-dim)]">
-          Ranked agent performance across adversarial scenarios. Coming in P1.
-        </p>
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-8" role="main">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Leaderboard</h1>
+          <p className="mt-2 text-[var(--color-text-dim)]">
+            Ranked agent performance across adversarial scenarios. Scores are reproducible.
+          </p>
+        </div>
+        <LeaderboardView />
       </main>
       <SiteFooter />
     </>
