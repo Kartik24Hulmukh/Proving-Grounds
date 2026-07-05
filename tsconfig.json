@@ -40,6 +40,7 @@
     "src/lib/db/verify-migration.ts",
     "src/lib/scenarios/verify.ts",
     "src/lib/arena/verify.ts",
+    "src/lib/evidence/verify.ts",
     "worker/index.ts"
   ]
 }
