@@ -1,3 +1,7 @@
 # DAY 3 Tasks
 
-Derive atomic tasks from `THREE_DAY_ROADMAP.md`; link each task to an acceptance gate and evidence in `BUILD_REPORT.md`.
+- Emit replayable capsules and self-contained HTML reports.
+- Add plugin validation, policy enforcement, and agent metadata attachment.
+- Keep the three fixtures reproducible and under the documented runtime budget.
+- Acceptance gates: `ACCEPTANCE_GATES.md` product and release sections.
+- Evidence: demo output, CLI tests, policy/plugin fixture tests, `BUILD_REPORT.md`.

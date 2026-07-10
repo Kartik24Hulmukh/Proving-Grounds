@@ -5,10 +5,11 @@ import { tmpdir } from 'node:os';
 import { ZodError } from 'zod';
 import { buildFixtureRepository, cleanupFixtureRepository } from './fixture.js';
 import { attachAgentMetadata, determineExitCode, replayCapsule, verifyEvidence } from './engine.js';
+import { emitAgentClaimsBundle } from './agent.js';
 import { loadClaimsDocument, loadCapsule, loadPolicyDocument, loadPluginManifest } from './schema.js';
 import { validatePolicy, evaluatePolicy } from './policy.js';
 import { validatePluginManifest } from './plugin.js';
-import { generateMutations, rangesFromLines } from './mutation.js';
+import { generateMutations, rangesFromLines, screenMutants } from './mutation.js';
 import { canonicalHash, readStructuredText, writeJson } from './utils.js';
 
 interface ParsedArgs {
@@ -137,6 +138,7 @@ async function runDemo(flags: Map<string, string[]>): Promise<void> {
     emitJson({
       kind: 'demo',
       stable: true,
+      positioning: 'bounded executable evidence, not reviewer or test-generation automation',
       runs: observed,
       capsulePath: finalResult.capsulePath,
       reportPath: finalResult.reportPath,
@@ -261,7 +263,27 @@ async function main(): Promise<number> {
           });
           return 0;
         }
-        throw new Error('Usage: evidence agent inspect | attach <capsule.json>');
+        if (subcommand === 'emit') {
+          const claimsPath = positional[1];
+          if (!claimsPath) {
+            throw new Error('Expected a claims path');
+          }
+          const capsulePath = getFlag(flags, 'capsule');
+          const outputPath = getFlag(flags, 'output');
+          const bundle = await emitAgentClaimsBundle(claimsPath, capsulePath);
+          if (outputPath) {
+            await writeJson(outputPath, bundle);
+          }
+          emitJson({
+            kind: 'agent',
+            emitted: true,
+            claimsPath,
+            capsulePath: capsulePath ?? null,
+            generatedBy: bundle.generatedBy,
+          });
+          return 0;
+        }
+        throw new Error('Usage: evidence agent inspect | attach <capsule.json> | emit <claims.yml> --capsule capsule.json');
       }
       case 'mutate': {
         const filePath = positional[0];
@@ -279,7 +301,15 @@ async function main(): Promise<number> {
           })
           .filter((value): value is { start: number; end: number } => Boolean(value));
         const mutants = generateMutations(source, filePath, lines ? rangesFromLines(lines) : undefined);
-        emitJson({ kind: 'mutate', filePath, count: mutants.length, mutants });
+        const screened = screenMutants(mutants);
+        emitJson({
+          kind: 'mutate',
+          filePath,
+          count: screened.length,
+          validCount: screened.filter((mutant) => mutant.valid).length,
+          invalidCount: screened.filter((mutant) => !mutant.valid).length,
+          mutants: screened,
+        });
         return 0;
       }
       case 'demo': {

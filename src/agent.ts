@@ -1,3 +1,5 @@
+import { loadCapsule, loadClaimsDocument } from './schema.js';
+
 export interface AgentContext extends Record<string, unknown> {
   name: string;
   pid: number;
@@ -23,4 +25,33 @@ export function attachAgentContext<T extends Record<string, unknown>>(value: T):
     ...value,
     generatedBy: detectAgentContext(),
   };
+}
+
+export interface AgentClaimsBundle {
+  generatedBy: AgentContext;
+  claims: Awaited<ReturnType<typeof loadClaimsDocument>>;
+  capsule?: {
+    repository: Awaited<ReturnType<typeof loadCapsule>>['repository'];
+    summary: Awaited<ReturnType<typeof loadCapsule>>['summary'];
+    integrity: Awaited<ReturnType<typeof loadCapsule>>['integrity'];
+  };
+}
+
+export async function emitAgentClaimsBundle(claimsPath: string, capsulePath?: string): Promise<AgentClaimsBundle> {
+  const claims = await loadClaimsDocument(claimsPath);
+  const bundle: AgentClaimsBundle = {
+    generatedBy: detectAgentContext(),
+    claims,
+  };
+
+  if (capsulePath) {
+    const capsule = await loadCapsule(capsulePath);
+    bundle.capsule = {
+      repository: capsule.repository,
+      summary: capsule.summary,
+      integrity: capsule.integrity,
+    };
+  }
+
+  return bundle;
 }

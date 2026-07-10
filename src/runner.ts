@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import type { Outcome, ProbeAttempt } from './domain.js';
-import { millis } from './utils.js';
+import { millis, redactSecrets } from './utils.js';
 
 export interface CommandExecutionOptions {
   cwd: string;
@@ -64,8 +64,8 @@ export async function runCommand(command: string[], options: CommandExecutionOpt
         exitCode,
         signal,
         durationMs: millis(started, ended),
-        stdout,
-        stderr,
+        stdout: redactSecrets(stdout),
+        stderr: redactSecrets(stderr),
       });
     });
   });

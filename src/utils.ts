@@ -81,6 +81,18 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+const secretPatterns: Array<[RegExp, string]> = [
+  [/ghp_[A-Za-z0-9_]{20,}/g, 'ghp_[redacted]'],
+  [/github_pat_[A-Za-z0-9_]{20,}/g, 'github_pat_[redacted]'],
+  [/sk-[A-Za-z0-9]{20,}/g, 'sk-[redacted]'],
+  [/AKIA[0-9A-Z]{16}/g, 'AKIA[redacted]'],
+  [/xox[baprs]-[A-Za-z0-9-]{10,}/g, 'xox[redacted]'],
+];
+
+export function redactSecrets(value: string): string {
+  return secretPatterns.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value);
+}
+
 export function joinCommand(command: string[]): string {
   return command
     .map((part) => (/^[a-zA-Z0-9._\-/:\\]+$/.test(part) ? part : JSON.stringify(part)))

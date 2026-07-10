@@ -6,6 +6,7 @@
   "scripts": {
     "cli": "tsx src/cli.ts",
     "demo": "tsx src/cli.ts demo",
+    "pack:check": "npm pack --dry-run",
     "test": "node --test --import tsx tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "verify:kit": "node scripts/verify-kit.mjs"

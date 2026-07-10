@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { generateMutations } from '../src/mutation.js';
 import { validatePolicy, evaluatePolicy } from '../src/policy.js';
 import { validatePluginManifest } from '../src/plugin.js';
+import { buildFixtureRepository, cleanupFixtureRepository } from '../src/fixture.js';
+import { verifyEvidence } from '../src/engine.js';
+import { readStructuredText } from '../src/utils.js';
 
 test('mutation engine emits the documented operators', () => {
   const source = `
@@ -74,4 +80,35 @@ test('plugin manifest validation accepts the documented shape', () => {
     capabilities: ['verify', 'replay'],
   });
   assert.equal(manifest.kind, 'runner');
+});
+
+test('policy fixture is enforced against the auth fixture', async () => {
+  const sandboxRoot = await mkdtemp(join(tmpdir(), 'evidence-policy-'));
+  const fixture = await buildFixtureRepository(resolve('fixtures/auth'), sandboxRoot);
+  try {
+    const policy = await readStructuredText(resolve('fixtures/policy/strict.yml'));
+    const result = await verifyEvidence({
+      repoRoot: fixture.repoRoot,
+      baseRef: fixture.baseSha,
+      headRef: fixture.headSha,
+      claimsPath: fixture.claimsPath,
+      outputDir: join(sandboxRoot, '.evidence'),
+      policyPath: resolve('fixtures/policy/strict.yml'),
+      attempts: 1,
+    });
+
+    assert.equal(result.policyResult?.accepted, true);
+    assert.equal(result.capsule.summary.demonstrated, 1);
+    assert.equal((policy as { requireCapsule: boolean }).requireCapsule, true);
+  } finally {
+    await cleanupFixtureRepository(fixture.repoRoot);
+    await rm(sandboxRoot, { recursive: true, force: true });
+  }
+});
+
+test('plugin adapter fixture validates as an external-style runner', async () => {
+  const manifest = validatePluginManifest(
+    await readStructuredText(resolve('fixtures/adapters/echo-runner/plugin.json')),
+  );
+  assert.equal(manifest.id, 'echo-runner');
 });

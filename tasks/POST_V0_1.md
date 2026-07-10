@@ -1,3 +1,7 @@
 # POST V0 1 Tasks
 
-Derive atomic tasks from `THREE_DAY_ROADMAP.md`; link each task to an acceptance gate and evidence in `BUILD_REPORT.md`.
+- Expand the benchmark set under responsible disclosure.
+- Harden the mutation engine with compile-screen scoring and gap reporting.
+- Add more external-style adapter fixtures and policy profiles.
+- Keep the public launch language aligned with `docs/LAUNCH.md`.
+- Record each release in `BUILD_REPORT.md` with evidence links.

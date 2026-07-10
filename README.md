@@ -5,6 +5,7 @@
 Build a local-first OSS differential, adversarial evidence compiler for pull requests. It runs explicit behavioral claims against base and head revisions, rejects vacuous evidence, challenges probes with focused mutants, and emits a replayable evidence capsule.
 
 This is **bounded executable evidence**, not formal proof.
+It is not a reviewer, not a test generator, and not a certification system.
 
 ## Codex start
 1. Read `AGENTS.md` and `CODEX_MASTER_PROMPT.md`.

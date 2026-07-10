@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { buildFixtureRepository, cleanupFixtureRepository } from '../src/fixture.js';
 import { replayCapsule, verifyEvidence, attachAgentMetadata } from '../src/engine.js';
 import { validateCapsule } from '../src/capsule.js';
+import { emitAgentClaimsBundle } from '../src/agent.js';
 
 async function withFixture(name: string, fn: (repo: Awaited<ReturnType<typeof buildFixtureRepository>>, sandboxRoot: string) => Promise<void>) {
   const sandboxRoot = await mkdtemp(join(tmpdir(), 'evidence-fixture-'));
@@ -93,5 +94,22 @@ test('agent metadata can be attached without changing the capsule hash contract'
     const generatedBy = updated.generatedBy as { name?: string };
     assert.equal((generatedBy.name ?? '').length > 0, true);
     assert.equal(updated.repository.baseSha, result.capsule.repository.baseSha);
+  });
+});
+
+test('agent bundle emits claims and attaches capsule provenance', async () => {
+  await withFixture('auth', async (fixture, sandboxRoot) => {
+    const result = await verifyEvidence({
+      repoRoot: fixture.repoRoot,
+      baseRef: fixture.baseSha,
+      headRef: fixture.headSha,
+      claimsPath: fixture.claimsPath,
+      outputDir: join(sandboxRoot, '.evidence'),
+      attempts: 1,
+    });
+
+    const bundle = await emitAgentClaimsBundle(fixture.claimsPath, result.capsulePath);
+    assert.equal(bundle.claims.claims.length, 1);
+    assert.equal(bundle.capsule?.integrity.capsuleHash, result.capsule.integrity.capsuleHash);
   });
 });

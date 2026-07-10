@@ -21,6 +21,11 @@ export interface MutationCandidate {
   mutatedSource: string;
 }
 
+export interface ScreenedMutation extends MutationCandidate {
+  valid: boolean;
+  diagnostics: readonly ts.Diagnostic[];
+}
+
 function intersectsLineRanges(node: ts.Node, sourceFile: ts.SourceFile, ranges?: MutationRange[]): boolean {
   if (!ranges || ranges.length === 0) {
     return true;
@@ -320,4 +325,24 @@ export function summarizeMutants(mutants: MutationCandidate[]): Record<string, n
     accumulator[mutant.operator] = (accumulator[mutant.operator] ?? 0) + 1;
     return accumulator;
   }, {});
+}
+
+export function screenMutation(mutant: MutationCandidate): ScreenedMutation {
+  const diagnostics = ts.transpileModule(mutant.mutatedSource, {
+    compilerOptions: {
+      module: ts.ModuleKind.NodeNext,
+      target: ts.ScriptTarget.ES2022,
+    },
+    fileName: `${mutant.operator}.ts`,
+    reportDiagnostics: true,
+  }).diagnostics ?? [];
+  return {
+    ...mutant,
+    valid: diagnostics.length === 0,
+    diagnostics,
+  };
+}
+
+export function screenMutants(mutants: MutationCandidate[]): ScreenedMutation[] {
+  return mutants.map(screenMutation);
 }

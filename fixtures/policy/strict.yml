@@ -1,0 +1,8 @@
+evidencePolicyVersion: "0.1"
+requireCapsule: true
+maximumRegressions: 0
+maximumVacuousIntendedClaims: 0
+allowInconclusive: false
+minimumValidMutants: 0
+minimumMutationStrength: 0
+requireReplay: true

@@ -18,7 +18,7 @@ import { runStableProbe } from './runner.js';
 import { canonicalHash, ensureDirectory, writeJson } from './utils.js';
 import { evaluatePolicy } from './policy.js';
 import { renderReport } from './report.js';
-import { generateMutations, rangesFromLines, summarizeMutants } from './mutation.js';
+import { generateMutations, rangesFromLines, screenMutants, summarizeMutants } from './mutation.js';
 
 export interface VerifyEvidenceOptions {
   repoRoot?: string;
@@ -140,6 +140,7 @@ async function runMutationSweep(repoRoot: string, baseRef: string, headRef: stri
   const files: Array<{ path: string; generatedMutants: number; operators: Record<string, number> }> = [];
   let generatedMutants = 0;
   let validMutants = 0;
+  let invalidMutants = 0;
   const operators: Record<string, number> = {};
 
   for (const file of changedFiles) {
@@ -149,14 +150,17 @@ async function runMutationSweep(repoRoot: string, baseRef: string, headRef: stri
     }
     const source = await readFile(absolute, 'utf8');
     const mutants = generateMutations(source, file.path, rangesFromLines(file.ranges));
-    const summary = summarizeMutants(mutants);
+    const screened = screenMutants(mutants);
+    const validScreened = screened.filter((mutant) => mutant.valid);
+    const summary = summarizeMutants(validScreened);
     files.push({
       path: file.path,
-      generatedMutants: mutants.length,
+      generatedMutants: screened.length,
       operators: summary,
     });
-    generatedMutants += mutants.length;
-    validMutants += mutants.length;
+    generatedMutants += screened.length;
+    validMutants += validScreened.length;
+    invalidMutants += screened.length - validScreened.length;
     for (const [operator, count] of Object.entries(summary)) {
       operators[operator] = (operators[operator] ?? 0) + count;
     }
@@ -165,6 +169,7 @@ async function runMutationSweep(repoRoot: string, baseRef: string, headRef: stri
   return {
     generatedMutants,
     validMutants,
+    invalidMutants,
     mutationStrength: generatedMutants === 0 ? 0 : validMutants / generatedMutants,
     changedFiles: files,
     operators,
