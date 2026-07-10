@@ -82,6 +82,48 @@ test('plugin manifest validation accepts the documented shape', () => {
   assert.equal(manifest.kind, 'runner');
 });
 
+test('policy evaluation accepts a mutation gate profile with enough screened mutants', async () => {
+  const policy = validatePolicy(
+    await readStructuredText(resolve('fixtures/policy/mutation-gate.yml')),
+  );
+
+  const capsule = {
+    version: '0.1',
+    createdAt: new Date().toISOString(),
+    repository: {
+      root: process.cwd(),
+      baseRef: 'base',
+      headRef: 'head',
+      baseSha: 'base',
+      headSha: 'head',
+      claimsPath: 'claims.yml',
+    },
+    claims: [],
+    summary: { demonstrated: 1, regression: 0, vacuous: 0, inconclusive: 0 },
+    artifacts: {},
+    generatedBy: {
+      name: 'test',
+      pid: 1,
+      cwd: process.cwd(),
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+    },
+    replay: { command: ['evidence', 'replay', 'capsule.json'], workingDirectory: process.cwd() },
+    integrity: { capsuleHash: '0'.repeat(64) },
+    mutations: {
+      generatedMutants: 8,
+      validMutants: 3,
+      invalidMutants: 5,
+      mutationStrength: 0.375,
+    },
+  } as unknown as Parameters<typeof evaluatePolicy>[0];
+
+  const decision = evaluatePolicy(capsule, policy);
+  assert.equal(decision.accepted, true);
+  assert.equal(decision.reasons.length, 0);
+});
+
 test('policy fixture is enforced against the auth fixture', async () => {
   const sandboxRoot = await mkdtemp(join(tmpdir(), 'evidence-policy-'));
   const fixture = await buildFixtureRepository(resolve('fixtures/auth'), sandboxRoot);
@@ -111,4 +153,11 @@ test('plugin adapter fixture validates as an external-style runner', async () =>
     await readStructuredText(resolve('fixtures/adapters/echo-runner/plugin.json')),
   );
   assert.equal(manifest.id, 'echo-runner');
+});
+
+test('second plugin adapter fixture validates too', async () => {
+  const manifest = validatePluginManifest(
+    await readStructuredText(resolve('fixtures/adapters/json-runner/plugin.json')),
+  );
+  assert.equal(manifest.id, 'json-runner');
 });

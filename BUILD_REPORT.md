@@ -5,15 +5,19 @@ Status: complete
 Scope completed:
 - Replaced the scaffold with a real evidence compiler CLI.
 - Added git worktree-backed verification, replay, validation, policy, plugin, agent, and mutation commands.
-- Added three real fixture histories: auth, off-by-one, and vacuous.
-- Added a fixture-backed policy profile and external-style plugin adapter manifest.
+- Added five real fixture histories: auth, off-by-one, vacuous, redaction, and timeout.
+- Added fixture-backed policy profiles and external-style plugin adapter manifests.
 - Added an agent bundle path that emits claims and attaches capsule provenance.
+- Added a redaction fixture proving captured secrets are scrubbed from probe output.
+- Added a timeout fixture proving setup timeouts collapse to inconclusive evidence.
 - Added stable capsule hashing, HTML reporting, and replay verification.
 - Added the package dependency needed for YAML-backed claims, policy, and plugin documents.
 
 Verification evidence:
+- `npm ci` completed successfully in 7.75 seconds.
+- `npm run demo` completed successfully in 6.25 seconds.
 - `npm run typecheck` passed.
-- `npm test` passed with 20 tests.
+- `npm test` passed with 26 tests.
 - `npm run pack:check` passed.
 - `npm run verify:kit` passed.
 - `npm run demo` is covered by the test suite and produces a stable five-run auth demo.
@@ -43,8 +47,11 @@ Release artifacts:
 - `fixtures/auth`
 - `fixtures/off-by-one`
 - `fixtures/vacuous`
+- `fixtures/redaction`
+- `fixtures/timeout`
 - `fixtures/policy`
 - `fixtures/adapters/echo-runner`
+- `fixtures/adapters/json-runner`
 
 Final verdict:
 - The kit is now a working evidence compiler with replayable, stable capsules and fixture-backed verification.

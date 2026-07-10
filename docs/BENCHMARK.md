@@ -1,6 +1,6 @@
 # Benchmark Plan
 
-Start with three controlled fixtures.
+Start with controlled fixtures, including the core auth/off-by-one/vacuous trio and a redaction-oriented safety fixture.
 
 Methodology:
 - Use hidden siblings for checker isolation so the benchmark harness cannot contaminate the subject under test.
