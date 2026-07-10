@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "kind",
+    "license",
+    "capabilities"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "language",
+        "runner",
+        "mutator",
+        "oracle",
+        "execution",
+        "agent",
+        "renderer",
+        "attestation"
+      ]
+    },
+    "license": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "securityRequirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

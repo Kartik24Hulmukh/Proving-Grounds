@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.evidence/
+coverage/
+demo-capsule.json
+.agents/
+.codex/
+graphify-out/
+*.log

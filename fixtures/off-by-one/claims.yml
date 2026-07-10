@@ -1,0 +1,8 @@
+version: "0.1"
+claims:
+  - id: inclusive-threshold
+    type: intended_delta
+    statement: Score 10 should be eligible
+    probe:
+      command: [node, probe.mjs]
+      timeoutMs: 30000

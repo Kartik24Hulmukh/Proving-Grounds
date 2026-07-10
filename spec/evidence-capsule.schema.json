@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "createdAt",
+    "repository",
+    "claims",
+    "summary"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "object",
+      "required": [
+        "baseSha",
+        "headSha"
+      ]
+    },
+    "claims": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
