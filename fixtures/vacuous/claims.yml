@@ -1,0 +1,8 @@
+version: "0.1"
+claims:
+  - id: trimmed-email
+    type: intended_delta
+    statement: Email addresses are trimmed before validation
+    probe:
+      command: [node, probe.mjs]
+      timeoutMs: 30000

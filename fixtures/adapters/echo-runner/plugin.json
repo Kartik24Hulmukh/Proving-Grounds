@@ -1,0 +1,16 @@
+{
+  "id": "echo-runner",
+  "version": "0.1.0",
+  "kind": "runner",
+  "license": "MIT",
+  "capabilities": [
+    "probe-execution",
+    "capsule-replay",
+    "fixture-verification"
+  ],
+  "securityRequirements": [
+    "no-secrets",
+    "workspace-bound",
+    "timeout-bounded"
+  ]
+}

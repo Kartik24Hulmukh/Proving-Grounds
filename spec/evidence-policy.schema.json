@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "evidencePolicyVersion",
+    "requireCapsule"
+  ],
+  "properties": {
+    "evidencePolicyVersion": {
+      "const": "0.1"
+    },
+    "requireCapsule": {
+      "type": "boolean"
+    },
+    "maximumRegressions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "maximumVacuousIntendedClaims": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "allowInconclusive": {
+      "type": "boolean"
+    },
+    "minimumValidMutants": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minimumMutationStrength": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "requireReplay": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

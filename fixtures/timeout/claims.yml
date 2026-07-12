@@ -1,0 +1,11 @@
+version: "0.1"
+claims:
+  - id: setup-timeout
+    type: intended_delta
+    statement: Slow setup should be inconclusive when the probe times out
+    probe:
+      command:
+        - node
+        - -e
+        - setTimeout(() => {}, 10000)
+      timeoutMs: 100

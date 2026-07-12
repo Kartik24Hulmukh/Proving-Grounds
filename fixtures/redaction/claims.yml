@@ -1,0 +1,8 @@
+version: "0.1"
+claims:
+  - id: redacted-output
+    type: intended_delta
+    statement: Authenticated users can export CSV without leaking raw secrets in probe output
+    probe:
+      command: [node, probe.mjs]
+      timeoutMs: 30000

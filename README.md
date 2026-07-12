@@ -1,56 +1,26 @@
-# Proving Grounds
+# Evidence Compiler — Codex Build Kit
 
-An independent, adversarial **testing lab and public leaderboard for AI agent products**.
+**Vision:** AI can write the patch. It should not grade its own homework.
 
-It puts real shipping agents (browser agents, computer-use agents, coding agents) through
-nasty, real-world tasks — including prompt-injection traps and "the correct answer is *I can't*"
-scenarios — records the footage, judges the run with a reproducible rubric, and ranks products publicly.
+Build a local-first OSS differential, adversarial evidence compiler for pull requests. It runs explicit behavioral claims against base and head revisions, rejects vacuous evidence, challenges probes with focused mutants, and emits a replayable evidence capsule.
 
-## Tech Stack
+This is **bounded executable evidence**, not formal proof.
+It is not a reviewer, not a test generator, and not a certification system.
 
-- **Framework:** Next.js App Router 16 + TypeScript + Tailwind v4
-- **Database:** Neon Postgres (Drizzle ORM + Better Auth)
-- **Storage:** Vercel Blob (private evidence artifacts)
-- **Queue/Rate-limit:** Upstash Redis
-- **Judge:** Vercel AI SDK (LLM-as-judge, temperature 0, pinned model)
-- **Arena:** Playwright + isolated sandbox (microVM/container)
-
-## Getting Started
+## Codex start
+1. Read `AGENTS.md` and `CODEX_MASTER_PROMPT.md`.
+2. Follow `THREE_DAY_ROADMAP.md` and `LOOP_ENGINEERING.md`.
+3. Do not stop until `ACCEPTANCE_GATES.md` passes.
 
 ```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Copy env template and fill in real values
-cp .env.example .env
-
-# 3. Generate + apply database migrations
-pnpm db:generate
-pnpm db:migrate
-
-# 4. Run dev server
-pnpm dev
+npm install
+npm run demo
+npm test
+npm run typecheck
+npm run verify:kit
 ```
 
-## Project Structure
+Public name is undecided; complete `docs/NAMING_GATE.md` before release.
 
-```
-src/
-  app/              # Next.js App Router routes
-    (public)/       # Public site (leaderboard, products, trials, methodology)
-    api/            # API routes (health, intake, queue callbacks)
-  lib/
-    db/             # Drizzle schema + Neon client
-    redis/          # Upstash Redis client + rate limiters
-    blob/           # Vercel Blob client (private evidence storage)
-    env.ts          # Environment variable validation
-  components/       # Shared UI components
-  styles/           # Global CSS + design system
-worker/             # Trial runner entrypoint (P3+)
-drizzle/            # Generated migrations
-```
-
-## License Policy
-
-Nothing AGPL/GPL is bundled into the distributed app. See `THIRD_PARTY_NOTICES.md` for the
-full dependency license inventory.
+## 100x strategy pack
+The `strategy/` directory adds current validation (11 July 2026), differentiation/moat, open capsule protocol, plugin ecosystem, maintainer policy, benchmark, agent integrations, traction loops, anti-gaming/attestation, open-core boundary, and 30-day roadmap. Supplied Proving Grounds research is preserved under `research/` with a transfer assessment.

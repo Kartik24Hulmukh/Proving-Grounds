@@ -1,88 +1,16 @@
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-# Cancel superseded runs on the same ref
-concurrency:
-  group: ci-$ github.ref 
-  cancel-in-progress: true
-
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
-  build-and-test:
-    name: Typecheck · Test · Build
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Typecheck (G: zero errors)
-        run: pnpm exec tsc --noEmit
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Unit + integration tests (42 tests)
-        run: pnpm test
-        env:
-          DATABASE_URL: $ secrets.DATABASE_URL 
-          UPSTASH_REDIS_REST_URL: $ secrets.UPSTASH_REDIS_REST_URL 
-          UPSTASH_REDIS_REST_TOKEN: $ secrets.UPSTASH_REDIS_REST_TOKEN 
-          BLOB_READ_WRITE_TOKEN: $ secrets.BLOB_READ_WRITE_TOKEN 
-          BETTER_AUTH_SECRET: $ secrets.BETTER_AUTH_SECRET 
-          AI_GATEWAY_API_KEY: $ secrets.AI_GATEWAY_API_KEY 
-
-      - name: Build
-        run: pnpm build
-        env:
-          DATABASE_URL: $ secrets.DATABASE_URL 
-          UPSTASH_REDIS_REST_URL: $ secrets.UPSTASH_REDIS_REST_URL 
-          UPSTASH_REDIS_REST_TOKEN: $ secrets.UPSTASH_REDIS_REST_TOKEN 
-          BLOB_READ_WRITE_TOKEN: $ secrets.BLOB_READ_WRITE_TOKEN 
-          BETTER_AUTH_SECRET: $ secrets.BETTER_AUTH_SECRET 
-          AI_GATEWAY_API_KEY: $ secrets.AI_GATEWAY_API_KEY 
-
-  secret-scan:
-    name: Gitleaks (G.1 – no leaked secrets, full history)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout (full history)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Gitleaks (full history via action)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-path: .gitleaks.toml
-          # Scan ALL commits, not just the diff — catches secrets introduced
-          # in any historical commit that default (diff-only) mode would miss.
-          log-opts: "--all"
-      - name: Gitleaks (full history via binary — belt-and-suspenders)
-        # Fallback: run gitleaks binary directly to guarantee full-history scan
-        # even if the action wrapper doesn't honor log-opts on push events.
-        run: |
-          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar xz -C /tmp
-          /tmp/gitleaks git --log-opts="--all" --config .gitleaks.toml --no-banner -v
-          echo "gitleaks full-history scan: CLEAN"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run pack:check
+      - run: npm run verify:kit

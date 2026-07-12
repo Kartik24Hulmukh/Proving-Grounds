@@ -1,0 +1,8 @@
+version: "0.1"
+claims:
+  - id: authenticated-csv-export
+    type: intended_delta
+    statement: Authenticated users can export CSV
+    probe:
+      command: [node, probe.mjs]
+      timeoutMs: 30000

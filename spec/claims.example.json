@@ -1,0 +1,33 @@
+{
+  "version": "0.1",
+  "claims": [
+    {
+      "id": "csv-export",
+      "type": "intended_delta",
+      "statement": "Authenticated users can export CSV",
+      "probe": {
+        "command": [
+          "npm",
+          "test",
+          "--",
+          "csv-export"
+        ],
+        "timeoutMs": 30000
+      }
+    },
+    {
+      "id": "anonymous-export-blocked",
+      "type": "invariant",
+      "statement": "Anonymous users cannot export data",
+      "probe": {
+        "command": [
+          "npm",
+          "test",
+          "--",
+          "anonymous-export"
+        ],
+        "timeoutMs": 30000
+      }
+    }
+  ]
+}

@@ -1,53 +1,9 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (never commit secrets)
-.env
-.env*.local
-.env.development
-.env.production
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# drizzle
-/drizzle/meta/
-
-# editor
-.vscode/
-.idea/
-.env.shell
-
-# trial batch outputs — NEVER commit (may contain resolved Blob URLs with tokens)
-*-results.md
-*-results.json
-batch-results.json
-batch-output.log
-/evidence/
-*.local
+node_modules/
+dist/
+.evidence/
+coverage/
+demo-capsule.json
+.agents/
+.codex/
+graphify-out/
+*.log
